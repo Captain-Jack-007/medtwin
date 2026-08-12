@@ -56,9 +56,17 @@ const ORDER: Step[] = [
 const REAL_LOCATIONS = VILLAGES.filter((location) => !location.isSynthetic);
 const CONSENT_VERSION = "medtwin-sensor-consent-v1";
 
+type AuthGate = "checking" | "unauthenticated" | "ready";
+
 export default function ScanPage() {
   const { language, t } = useLanguage();
   const router = useRouter();
+  // Without a configured Supabase backend (local demo) the scan flow is open,
+  // so the gate starts "ready"; when a backend exists we start "checking" and
+  // the effect below resolves the session before any scan step renders.
+  const [authGate, setAuthGate] = useState<AuthGate>(() =>
+    getSupabaseBrowserClient() ? "checking" : "ready"
+  );
   const [step, setStep] = useState<Step>("consent");
   const [consented, setConsented] = useState(false);
   const [ageRange, setAgeRange] = useState("");
@@ -87,6 +95,32 @@ export default function ScanPage() {
   const progress = Math.round((index / (ORDER.length - 1)) * 100);
   const next = () => setStep(ORDER[Math.min(index + 1, ORDER.length - 1)]);
   const back = () => setStep(ORDER[Math.max(index - 1, 0)]);
+
+  // Authentication must precede the scan. When a Supabase backend is
+  // configured, an unauthenticated visitor is redirected to sign in before
+  // any scan step renders. Without a configured backend (local demo), the
+  // flow proceeds as before so the offline demo is not locked out.
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    let active = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      if (data.user) {
+        setAuthGate("ready");
+        return;
+      }
+      setAuthGate("unauthenticated");
+      router.replace("/auth?next=%2Fscan");
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active && session?.user) setAuthGate("ready");
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [router]);
 
   const hasCustomSymptom = symptoms.includes(CUSTOM_SYMPTOM_KEY);
   const reportedSymptoms = useMemo(() => [
@@ -261,6 +295,19 @@ export default function ScanPage() {
       setSubmitting(false);
     }
   };
+
+  if (authGate !== "ready") {
+    return (
+      <>
+        <TopBar />
+        <main className="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-4 py-16 sm:px-5">
+          <p className="text-sm text-[var(--muted)]" role="status">
+            {t("auth.checking")}
+          </p>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

@@ -51,13 +51,32 @@ The database schema and row-level security policies are in
 1. Create the Supabase project and confirm its region, data residency,
    retention, and legal basis are appropriate for Uzbekistan operations before
    accepting patient data.
-2. Apply the migration with the Supabase CLI or SQL editor.
-3. Configure Supabase Auth email confirmation, allowed redirect URLs, and the
-   production HTTPS domain.
-4. Copy `.env.example` to `.env.local` and set the Supabase URL, anonymous
+2. Copy `.env.example` to `.env.local` and set the Supabase URL, anonymous
    key, service-role key, and Anthropic server key. Never commit `.env.local`.
-5. Set both `MEDTWIN_PRODUCTION_MODE=true` and
-   `NEXT_PUBLIC_MEDTWIN_PRODUCTION_MODE=true` only after steps 1–4 are live.
+3. Apply the migrations. Add `SUPABASE_DB_URL` to `.env.local` (Supabase →
+   Project Settings → Database → Connection string → URI), then run:
+
+   ```bash
+   npm run db:status   # lists migrations and whether each is applied
+   npm run db:push     # applies pending migrations in filename order
+   ```
+
+   Migrations are tracked in a `public.schema_migrations` table, so `db:push`
+   is idempotent and safe to re-run. Alternatively, paste each file in
+   `supabase/migrations/` into the Supabase SQL editor in filename order.
+4. Configure Supabase Auth email confirmation, allowed redirect URLs, and the
+   production HTTPS domain.
+5. Enable production mode only after steps 1–4 are live. The preflight verifies
+   required env vars and confirms the schema is present before flipping the two
+   flags in `.env.local`:
+
+   ```bash
+   npm run prod:preflight   # report readiness (no changes)
+   npm run prod:enable      # flip both flags to true when all checks pass
+   ```
+
+   Restart the server after enabling. This sets `MEDTWIN_PRODUCTION_MODE=true`
+   and `NEXT_PUBLIC_MEDTWIN_PRODUCTION_MODE=true`.
 6. Assign `clinician` and `admin` roles only through trusted server-side
    Supabase Auth app metadata. A browser user must never be allowed to assign
    their own role.

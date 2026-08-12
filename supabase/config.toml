@@ -1,0 +1,12 @@
+# Supabase CLI project configuration.
+# The project_id is the remote project reference used by `supabase link`
+# and `supabase db push`. It is a public identifier, not a secret.
+project_id = "iksrxhcabjtqkfabamue"
+
+[db]
+# Local Postgres major version used by `supabase start` for local development.
+major_version = 15
+
+[db.migrations]
+# Migrations live in supabase/migrations and are applied in filename order.
+schema_paths = []

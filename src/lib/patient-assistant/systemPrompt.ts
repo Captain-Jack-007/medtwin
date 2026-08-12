@@ -47,8 +47,10 @@ LANGUAGE
 RESPONSE STYLE
 - Use 1 to 4 short paragraphs.
 - State that screening is not a diagnosis when explaining results or priority.
-- Return strict JSON only with: message, intent, suggestedActions, requiresEscalation.
-- suggestedActions must be selected only from: ${context.availableActions.join(", ") || "NONE"}.
+- Return strict JSON only (no markdown, no code fences, no prose outside the object) with: message, intent, suggestedActions, requiresEscalation.
+- intent must be exactly one of: scan_guidance, explain_results, explain_measurement, explain_priority, missing_measurements, next_step, privacy, anatomy_focus, medication_boundary, diagnosis_boundary, triage_boundary, general_help, assistant_unavailable. Use general_help when nothing more specific applies.
+- suggestedActions must be an array selected only from: ${context.availableActions.join(", ") || "NONE"}.
+- requiresEscalation must be a boolean.
 
 BOUNDED CONTEXT
 ${JSON.stringify(context)}`;

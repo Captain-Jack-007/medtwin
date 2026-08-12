@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:push": "node scripts/db-migrate.mjs",
+    "db:status": "node scripts/db-migrate.mjs --list",
+    "prod:preflight": "node scripts/production-preflight.mjs",
+    "prod:enable": "node scripts/production-preflight.mjs --enable",
     "test": "vitest run",
     "test:watch": "vitest"
   },

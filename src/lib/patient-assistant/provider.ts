@@ -76,7 +76,7 @@ export class OpenAICompatiblePatientAssistantProvider
     };
     const content = payload.choices?.[0]?.message?.content;
     if (!content) throw new Error("Assistant provider returned no content");
-    return JSON.parse(content) as PatientAssistantResponse;
+    return parseAssistantJson(content);
   }
 }
 
@@ -121,6 +121,25 @@ export class AnthropicPatientAssistantProvider implements PatientAssistantProvid
     };
     const content = payload.content?.find((block) => block.type === "text")?.text;
     if (!content) throw new Error("Anthropic assistant provider returned no content");
-    return JSON.parse(content) as PatientAssistantResponse;
+    return parseAssistantJson(content);
+  }
+}
+
+// Some models wrap JSON in a markdown code fence (```json … ```) or surround it
+// with prose. Extract the JSON object before parsing so a well-formed answer is
+// not discarded as unparseable.
+function parseAssistantJson(content: string): PatientAssistantResponse {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = fenced ? fenced[1].trim() : trimmed;
+  try {
+    return JSON.parse(candidate) as PatientAssistantResponse;
+  } catch {
+    const start = candidate.indexOf("{");
+    const end = candidate.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      return JSON.parse(candidate.slice(start, end + 1)) as PatientAssistantResponse;
+    }
+    throw new Error("Assistant provider returned non-JSON content");
   }
 }
