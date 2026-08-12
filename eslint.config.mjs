@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored, minified assets served as-is (e.g. the local Draco decoder).
+    "public/**",
+    // One-off maintenance scripts (asset inspection), not app code.
+    "scripts/**",
   ]),
 ]);
 
